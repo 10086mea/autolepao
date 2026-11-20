@@ -1,0 +1,4 @@
+requests==2.34.2
+cryptography==50.0.2
+Pillow==13.0.0
+tkintermapview==1.32

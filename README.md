@@ -1,45 +1,32 @@
-# AutoLepao
+# 步道乐跑
 
-给自己账号使用的步道乐跑命令行工具。扫码登录、导入路线，然后按学校的有效时段自动提交。
+一个给自己使用的 Python 乐跑客户端。扫码登录，在地图上画路线，然后运行。账号的学校、学号、学期和跑区从接口读取，不限定学校。
 
-## Windows
+## 使用
 
-1. 到 [Releases](https://github.com/10086mea/autolepao/releases/latest) 下载 `autolepao-windows-x64.zip` 并解压。
-2. 双击 `开始.cmd`，按提示扫码登录，选择路线和跑区。
-3. 保持窗口开启，程序会等待开始时间，完成后显示乐跑返回的结果。
+下载 [Windows 便携版](https://github.com/10086mea/autolepao/releases/latest)，解压，双击 **lepao.exe**。
 
-运行包已经包含所需环境。首次设置后会记住账号、设备和路线，下次直接启动。
+1. 使用微信扫码，在手机上确认登录。QQ 用户在菜单选择 QQ 登录。
+2. 选择“地图画线”，选跑区，点击地图画路线，保存。
+3. 选择“开始 / 恢复跑步”。需要每天运行时，选择“每日托管”。
 
-在终端中也可以使用下面的命令。
+不用安装 Python、PHP 或 Docker，也不用填写应用 ID、Secret。运行期间保持窗口打开；每日托管每天最多一次，学期目标完成后结束。
 
-```bat
-lepao.cmd
-lepao.cmd --daily
-lepao.cmd status
-```
+地图支持地点搜索、坐标定位、撤回和首尾相连。橙色标记是候选打卡点，本次分配结果会在开始前显示。地图使用 OpenStreetMap，绘制坐标在提交前转换为 GCJ02。
 
-`--daily` 每天自动安排一次，达到学期目标后结束。运行期间需要保持电脑开机、联网。
-
-## 路线
-
-导入 GPX 或 GeoJSON 文件，坐标使用 WGS84。程序会转成乐跑使用的 GCJ02 坐标。
-
-闭合路线按圈数延长，开放路线沿原线往返。里程、配速、有效时间和打卡点会在提交前检查。
-
-需要更换路线或参数时，运行 `lepao.cmd setup`。指定一次开始时间可以使用 `lepao.cmd --at "2026-12-01 14:00"`，时间按北京时间解释。
-
-## 登录与数据
-
-默认使用 QQ 扫码。微信扫码还需要有效的移动应用 ID 和 Secret，选择微信后会提示填写。仓库没有附带对应 Secret。
-
-个人数据保存在程序旁的 `data` 目录。重新扫码用 `lepao.cmd login`，查询次数和上次结果用 `lepao.cmd status`。
-
-程序在提交过程中断或超时，会保留待确认状态。重新运行时会恢复时间线，或提示先核对远端成绩，避免重复提交。
+登录状态、设备信息和路线保存在程序旁边的 `data` 目录。设备按账号保存，不会每次重新随机。程序中断后重新打开，选择“开始 / 恢复跑步”继续。提交结果不确定时会先核对远端记录，不会直接重复发送。
 
 ## 从源码运行
 
-已有 PHP 8.2+、cURL、OpenSSL 和 SimpleXML 环境时，直接运行 `php lepao.php`。开发验证运行 `php tests/run.php`，打包运行 `php -d phar.readonly=0 tools/build.php`。
+需要 Python 3.11+ 和 Tk。发布维护者完成应用配置后运行：
 
-仓库只有一个 `main` 分支。[协议与研究记录](docs/protocol.md)包含 APK 信息、签名、接口流程和已知限制。
+```sh
+python -m pip install -r requirements.txt
+python lepao.py
+```
 
-项目代码采用 MIT 许可，Windows 包中的 PHP 和 Microsoft 运行库使用各自许可。
+普通用户直接使用便携包。开发、测试和打包见 [维护说明](docs/maintainers.md)，APK 版本、接口流程和踩坑记录见 [协议记录](docs/protocol.md)。
+
+当前支持已实现的在线打卡规则。需要现场扫码或其他尚未实现的校验时，程序会停止并说明原因；本地检查通过不代表远端成绩一定有效。
+
+项目采用 MIT 许可。Python 和其他随包依赖遵循各自许可。

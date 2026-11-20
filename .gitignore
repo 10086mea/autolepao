@@ -1,5 +1,11 @@
 /data/
 /dist/
 /vendor/
+/.venv/
+/build/
+/_build_config.json
+*.spec
+__pycache__/
+*.pyc
 *.log
 .DS_Store
