@@ -336,7 +336,7 @@ final class Application
             $row['result'] = $row['result'] ? json_decode($row['result'], true) : null;
             $row['events'] = $this->db->all('SELECT at,message FROM events WHERE task_id=? ORDER BY id', [$row['id']]);
             return $row;
-        }, $this->db->all('SELECT t.*,a.nickname,a.uid FROM tasks t JOIN accounts a ON a.id=t.account_id ORDER BY created_at DESC LIMIT 100'));
+        }, $this->db->all('SELECT t.id,t.account_id,t.state,t.due_at,t.created_at,t.started_at,t.config,t.result,t.message,t.mode,a.nickname,a.uid FROM tasks t JOIN accounts a ON a.id=t.account_id ORDER BY created_at DESC LIMIT 100'));
     }
 
     public function hosting(): array
