@@ -1,0 +1,71 @@
+# UTF-8, tab-separated: mobileModel<TAB>display name<TAB>Android version
+# Reviewed 2026-10-25; release window 2023-10-25 through 2026-10-25.
+# Curated snapshot, not an automatic feed. Only released phones with verified model/OS pairs.
+# Android values are supported shipping versions, not a claim about the latest OTA.
+# One regional model per product; existing account profiles are never reselected.
+# Model-code reference: https://github.com/KHwang9883/MobileModels
+# Brand files: xiaomi_en.md, oneplus_en.md, samsung_global_en.md, vivo_cn.md, oppo_cn.md, realme_cn.md
+# The reference has no Android-version field; OS sources are listed below.
+
+# Xiaomi / POCO: global releases in 2024, except Xiaomi 15 (2025).
+# https://trust.mi.com/misrc/updates/phone?tab=aerdata
+# https://www.mi.com/in/product/xiaomi-14-ultra/specs/
+# https://www.mi.com/ng/support/faq/details/KA-536414/
+# https://www.mi.com/uk/support/faq/details/KA-166446/
+# https://www.mi.com/uk/support/faq/details/KA-169272/
+# https://www.mi.com/uk/support/faq/details/KA-90062/
+23127PN0CG	Xiaomi 14	14
+24030PN60G	Xiaomi 14 Ultra	14
+2406APNFAG	Xiaomi 14T	14
+2407FPN8EG	Xiaomi 14T Pro	14
+24129PN74G	Xiaomi 15	15
+24069PC21G	POCO F6	14
+23113RKC6G	POCO F6 Pro	14
+2311DRK48G	POCO X6 Pro 5G	14
+
+# OnePlus: 12 / 12R / Nord 4 (2024), 13 / 13R (2025), global variants.
+# https://www.oneplus.com/global/12/specs
+# https://www.oneplus.com/us/12r/specs
+# https://www.oneplus.com/global/nord-4/specs
+# https://www.oneplus.com/global/13/specs
+# https://www.oneplus.in/13r/specs
+CPH2581	OnePlus 12	14
+CPH2609	OnePlus 12R	14
+CPH2663	OnePlus Nord 4	14
+CPH2653	OnePlus 13	15
+CPH2645	OnePlus 13R	15
+
+# Samsung: S24 / A35 / A55 / Fold6 / Flip6 (2024), S25 / A36 / A56 (2025).
+# https://doc.samsungmobile.com/SM-S921B/029298240224/eng.html
+# https://news.samsung.com/global/samsung-galaxy-s25-series-sets-the-standard-of-ai-phone-as-a-true-ai-companion
+# https://news.samsung.com/global/samsung-galaxy-a55-5g-and-galaxy-a35-5g-awesome-innovations-and-security-engineered-for-everyone
+# https://news.samsung.com/global/samsung-marks-a-step-forward-with-ai-for-everyone-by-introducing-new-galaxy-a56-5g-galaxy-a36-5g-and-galaxy-a26-5g
+# https://news.samsung.com/id/samsung-galaxy-z-fold6-and-z-flip6-membawa-galaxy-ai-ke-level-yang-lebih-tinggi
+SM-S921B	Samsung Galaxy S24	14
+SM-S926B	Samsung Galaxy S24+	14
+SM-S928B	Samsung Galaxy S24 Ultra	14
+SM-S931B	Samsung Galaxy S25	15
+SM-S936B	Samsung Galaxy S25+	15
+SM-S938B	Samsung Galaxy S25 Ultra	15
+SM-A356E	Samsung Galaxy A35 5G	14
+SM-A556E	Samsung Galaxy A55 5G	14
+SM-A366E	Samsung Galaxy A36 5G	15
+SM-A566E	Samsung Galaxy A56 5G	15
+SM-F956B	Samsung Galaxy Z Fold6	14
+SM-F741B	Samsung Galaxy Z Flip6	14
+
+# vivo: X100 (2023-11), X200 (2024-10), China variants.
+# https://www.vivo.com.cn/vivo/param/x100
+# https://www.vivo.com.cn/vivo/param/x200
+V2309A	vivo X100	14
+V2415A	vivo X200	15
+
+# OPPO: Find X8 series (2024-10), China variants.
+# https://bdev.oppo.com/open/resource/index/document/detail?id=100
+# https://www.oppo.com/en/newsroom/press/find-x8-series-coloros-15-launch-camera-ai/
+PKB110	OPPO Find X8	15
+PKC110	OPPO Find X8 Pro	15
+
+# realme: GT7 Pro (2024-11), China variant.
+# https://www.realme.com/global/realme-gt-7-pro/specs
+RMX5010	realme GT7 Pro	15

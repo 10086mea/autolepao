@@ -1,0 +1,23 @@
+{
+  "name": "10086mea/autolepao",
+  "description": "Standalone QR login, map routes and scheduled Lepao submissions",
+  "type": "project",
+  "license": "MIT",
+  "require": {
+    "php": "^8.2",
+    "ext-json": "*",
+    "ext-openssl": "*",
+    "ext-pdo": "*",
+    "ext-pdo_sqlite": "*",
+    "guzzlehttp/guzzle": "^7.9",
+    "psr/log": "^3.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "AutoLepao\\": "src/"
+    }
+  },
+  "scripts": {
+    "test": "php tests/run.php"
+  }
+}
