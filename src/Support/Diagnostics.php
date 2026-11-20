@@ -4,13 +4,10 @@ declare(strict_types=1);
 
 namespace AutoLepao\Support;
 
-use Psr\Log\AbstractLogger;
-
-final class Diagnostics extends AbstractLogger
+final class Diagnostics
 {
-    public function log($level, string|\Stringable $message, array $context = []): void
+    public function warning(string $message, array $context = []): void
     {
-        error_log(json_encode(['at' => gmdate('c'), 'level' => $level,
-            'message' => (string) $message, 'context' => $context], JSON_UNESCAPED_UNICODE));
+        error_log(json_encode(['at' => gmdate('c'), 'message' => $message, 'context' => $context], JSON_UNESCAPED_UNICODE));
     }
 }

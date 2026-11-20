@@ -97,41 +97,9 @@ final class Rules
         $dx = deg2rad($b['o'] - $a['o']);
         return 6371000 * 2 * asin(min(1, sqrt(sin($dy / 2) ** 2 + cos($la) * cos($lb) * sin($dx / 2) ** 2)));
     }
-    public static function route(array $c): array
+    public static function route(array $config): array
     {
-        if (($c['trajectory_version'] ?? 1) >= 2) {
-            return Trajectory::generate($c, Schedule::duration($c));
-        }
-        $ring = [];
-        $cumulative = [0.0];
-        $cos = 111320 * cos(deg2rad($c['center_lat']));
-        for ($i = 0;$i <= 720;$i++) {
-            $p = ['a' => $c['center_lat'] + $c['semi_major_m'] * sin($i * 2 * M_PI / 720) / 111320,'o' => $c['center_lng'] + $c['semi_minor_m'] * cos($i * 2 * M_PI / 720) / $cos];
-            if ($i) {
-                $cumulative[] = $cumulative[$i - 1] + self::distance($ring[$i - 1], $p);
-            }
-            $ring[] = $p;
-        }
-        $count = max(2, (int)ceil($c['distance_km'] * 1000 / $c['sample_m']) + 1);
-        $out = [];
-        for ($i = 0;$i < $count;$i++) {
-            $d = $c['distance_km'] * 1000 * $i / ($count - 1);
-            $offset = fmod($d, $cumulative[720]);
-            $lo = 1;
-            $hi = 720;
-            while ($lo < $hi) {
-                $mid = intdiv($lo + $hi, 2);
-                if ($cumulative[$mid] < $offset) {
-                    $lo = $mid + 1;
-                } else {
-                    $hi = $mid;
-                }
-            }
-            $n = $lo;
-            $f = ($offset - $cumulative[$n - 1]) / ($cumulative[$n] - $cumulative[$n - 1]);
-            $out[] = ['a' => round($ring[$n - 1]['a'] + ($ring[$n]['a'] - $ring[$n - 1]['a']) * $f, 8),'o' => round($ring[$n - 1]['o'] + ($ring[$n]['o'] - $ring[$n - 1]['o']) * $f, 8),'elapsed' => round($c['distance_km'] * $c['pace_s_per_km'] * $i / ($count - 1), 2),'distance_m' => round($d, 2)];
-        }
-        return $out;
+        return Trajectory::generate($config, Schedule::duration($config));
     }
     public static function evaluate(array $c, array $route, ?float $at = null, ?int $remote = null): array
     {

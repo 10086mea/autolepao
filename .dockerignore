@@ -1,6 +1,0 @@
-.git
-data
-vendor
-.env
-*.log
-tests

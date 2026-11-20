@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace AutoLepao\Core;
 
 use AutoLepao\Support\Http;
-use AutoLepao\Support\SecretBox;
+use AutoLepao\State;
 
 final class Wechat
 {
-    public function __construct(private Http $http, private SecretBox $box)
+    public function __construct(private Http $http, private State $box)
     {
     }
     private function config(): array
@@ -39,7 +39,7 @@ final class Wechat
             } else {
                 $token = $this->get('cgi-bin/token', ['grant_type' => 'client_credential','appid' => $appid,'secret' => $secret]);
                 if (empty($token['access_token'])) {
-                    throw new Problem('微信应用授权失败，请检查后台配置', 502);
+                    throw new Problem('微信应用授权失败，请检查微信应用配置', 502);
                 }
                 $result = $this->get('cgi-bin/ticket/getticket', ['access_token' => $token['access_token'],'type' => 2]);
                 if (empty($result['ticket'])) {

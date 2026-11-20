@@ -37,19 +37,12 @@ final class Runner
         $spacing = (float)$config['sample_m'];
         $radius = (int)round($config['rules']['checkpoint_radius_m']);
         $distance = round((float)$config['distance_km'], 2);
-        $modern = ($config['trajectory_version'] ?? 1) >= 2;
-        if ($modern) {
-            [, $lengths] = Trajectory::circuit($config);
-            $lap = max(1, (int)ceil(end($lengths) / $spacing));
-        } else {
-            $major = (float)$config['semi_major_m'];
-            $minor = (float)$config['semi_minor_m'];
-            $lap = max(1, (int)ceil(M_PI * (3 * ($major + $minor) - sqrt((3 * $major + $minor) * ($major + 3 * $minor))) / max(1.0, $spacing)));
-        }
+        [, $lengths] = Trajectory::circuit($config);
+        $lap = max(1, (int) ceil(end($lengths) / $spacing));
         $times = [];
         $elapsed = 0.0;
         foreach ($points as $step => $point) {
-            $segment = $modern ? ($step ? Rules::distance($points[$step - 1], $point) : 0) : $spacing;
+            $segment = $step ? Rules::distance($points[$step - 1], $point) : 0;
             $elapsed += $segment / max(.1, (float)$point['s']);
             $times[$step] = $elapsed;
         }

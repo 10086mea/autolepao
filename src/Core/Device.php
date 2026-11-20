@@ -40,68 +40,34 @@ final class Device
         }
         return $models;
     }
-    public static function withRandomModel(array $profile): array
+    public static function generated(): array
     {
         $models = self::models();
         $model = $models[random_int(0, count($models) - 1)];
-        return array_merge($profile, ['mobileModel' => $model['model'],'mobileOsVersion' => $model['android'],
-            'device_name' => $model['name'],'model_source' => 'catalog_random','catalog_version' => 1,'updated_at' => microtime(true)]);
-    }
-    public static function upgrade(array $profile): array
-    {
-        if (!$profile || ($profile['source'] ?? 'legacy') === 'legacy') {
-            return self::generated();
-        }
-        if (($profile['source'] ?? '') === 'generated' && !isset($profile['catalog_version'])) {
-            return self::withRandomModel($profile);
-        }
-        return $profile;
-    }
-    public static function legacy(): array
-    {
-        return ['mobileModel' => '2206123SC','mobileDeviceId' => '00000000-0000-4000-8000-000000000000','mobileOsVersion' => '13','ostype' => '1','source' => 'legacy','updated_at' => null];
-    }
-    public static function generated(): array
-    {
         $bytes = random_bytes(16);
         $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
         $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
         $hex = bin2hex($bytes);
         $id = substr($hex, 0, 8).'-'.substr($hex, 8, 4).'-'.substr($hex, 12, 4).'-'.substr($hex, 16, 4).'-'.substr($hex, 20);
-        return self::withRandomModel(array_merge(self::legacy(), ['mobileDeviceId' => $id,'source' => 'generated','updated_at' => microtime(true)]));
+        return ['mobileDeviceId' => $id, 'mobileModel' => $model['model'],
+            'mobileOsVersion' => $model['android'], 'device_name' => $model['name'], 'ostype' => '1'];
     }
-    public static function read(array $credentials): array
-    {
-        return $credentials['device_profile'] ?? self::legacy();
-    }
-    public static function validate(array $input): array
-    {
-        $out = [];
-        foreach (self::FIELDS as $field) {
-            $value = $input[$field] ?? null;
-            if (!is_string($value) || trim($value) === '' || strlen($value) > 128 || preg_match('/[\x00-\x1f\x7f]/', $value)) {
-                throw new Problem('请填写有效的手机型号、设备 ID 和 Android 版本');
-            }
-            $out[$field] = trim($value);
-        }
-        return $out + ['ostype' => '1','source' => 'manual','updated_at' => microtime(true)];
-    }
-    public static function configuredParams(array $device): array
-    {
-        return array_intersect_key($device, array_flip([...self::FIELDS,'ostype']));
-    }
+
     public static function forLogin(array $device): array
     {
-        unset($device['session_device']);
         return $device;
     }
-    public static function pending(array $device): bool
-    {
-        return isset($device['session_device']) && self::configuredParams($device) !== self::configuredParams($device['session_device']);
-    }
+
     public static function params(array $credentials): array
     {
-        $device = self::read($credentials);
-        return self::configuredParams($device['session_device'] ?? $device);
+        $device = $credentials['device_profile'] ?? [];
+        $params = [];
+        foreach ([...self::FIELDS, 'ostype'] as $field) {
+            if (!is_string($device[$field] ?? null) || trim($device[$field]) === '') {
+                throw new Problem('设备资料不完整，请重新扫码登录');
+            }
+            $params[$field] = $device[$field];
+        }
+        return $params;
     }
 }

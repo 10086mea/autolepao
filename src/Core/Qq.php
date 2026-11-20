@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AutoLepao\Core;
 
-use GuzzleHttp\Cookie\CookieJar;
-use GuzzleHttp\Psr7\{Uri,UriResolver};
-use AutoLepao\Support\{Http,SecretBox};
+use AutoLepao\Support\CookieJar;
+use AutoLepao\Support\Http;
+use AutoLepao\State;
 
 /** Mobile application QR authorization, not PC website OAuth. */
 final class Qq
@@ -19,7 +19,7 @@ final class Qq
     private const UA = 'Mozilla/5.0 (Linux; Android 11; Android Device) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36';
     private const HOSTS = ['openmobile.qq.com','graph.qq.com','xui.ptlogin2.qq.com','ssl.ptlogin2.qq.com','ptlogin2.qq.com','ptlogin2.graph.qq.com','ssl.ptlogin2.graph.qq.com','connect.qq.com'];
 
-    public function __construct(private Http $http, private SecretBox $box)
+    public function __construct(private Http $http, private State $box)
     {
     }
 
@@ -105,11 +105,7 @@ final class Qq
     }
     private function cookie(CookieJar $cookies, string $name): string
     {
-        return (string)($cookies->getCookieByName($name)?->getValue() ?? '');
-    }
-    private function diagnostic(string $stage, array $data): void
-    {
-        error_log('AutoLepao QQ authorization failed at '.$stage);
+        return (string)($cookies->value($name) ?? '');
     }
     public function start(): array
     {
@@ -149,7 +145,7 @@ final class Qq
             throw new Problem('QQ 未返回二维码图片，请重试', 409);
         }
         return ['provider' => 'qq','image' => base64_encode($r['body']),'expires' => time() + 150,
-            'qq_context' => $this->box->seal(['xlogin' => $xlogin,'params' => $context,'cookies' => $cookies->toArray()])];
+            'qq_context' => $this->box->seal(['xlogin' => $xlogin,'params' => $context,'cookies' => $cookies->export()])];
     }
     private function session(array $qr): array
     {
@@ -158,7 +154,7 @@ final class Qq
         }
         try {
             $c = $this->box->open($qr['qq_context']);
-            $cookies = new CookieJar(false, $c['cookies']);
+            $cookies = new CookieJar($c['cookies']);
         } catch (\Throwable $e) {
             throw new Problem('QQ 扫码会话已失效，请重新扫码', 409);
         }
@@ -176,61 +172,37 @@ final class Qq
             'pt_3rd_aid' => self::APP_ID,'pt_openlogin_data' => parse_url($c['xlogin'], PHP_URL_QUERY).'&pt_flex=1',
             'device' => '2','ptopt' => '1','pt_uistyle' => $p['style'],'jsver' => 'v1.36.0',
             'login_sig' => $this->cookie($cookies, 'pt_login_sig'),'r' => (string)microtime(true)], '', '&', PHP_QUERY_RFC3986), $cookies, $c['xlogin']);
-        $c['cookies'] = $cookies->toArray();
+        $c['cookies'] = $cookies->export();
         $qr['qq_context'] = $this->box->seal($c);
-        try {
-            return self::parsePoll($r['body']) + ['qr' => $qr];
-        } catch (Problem $e) {
-            // Keep the complete upstream response in private storage for diagnosis.
-            $this->diagnostic('poll', ['response' => $r['body']]);
-            throw $e;
-        }
+        return self::parsePoll($r['body']) + ['qr' => $qr];
     }
     public function exchange(array $qr, string $url): array
     {
-        [$c,$cookies] = $this->session($qr);
+        [$context, $cookies] = $this->session($qr);
         $seen = [];
-        $initial = $url;
-        $hops = [];
-        try {
-            for ($i = 0;$i < 10;$i++) {
-                $hops[] = ['url' => $url,'trusted' => self::trusted($url, true),'repeated' => isset($seen[$url])];
-                if (!self::trusted($url, true) || isset($seen[$url])) {
-                    throw new Problem('QQ 授权跳转异常，请重新扫码', 409);
-                }
-                $seen[$url] = true;
-                if ($grant = self::grant($url)) {
-                    return $this->verify($grant);
-                }
-                if (str_starts_with($url, 'auth://')) {
-                    break;
-                }
-                $url = preg_replace('/^http:/', 'https:', $url);
-                $r = $this->get($url, $cookies, $c['xlogin']);
-                $location = '';
-                $hops[array_key_last($hops)]['response'] = $r;
-                foreach ($r['headers'] ?? [] as $key => $value) {
-                    if (strtolower($key) === 'location') {
-                        $location = is_array($value) ? ($value[0] ?? '') : $value;
-                    }
-                }
-                if (!$location && preg_match('/(?:location(?:\.href)?\s*=\s*|location\.(?:replace|assign)\(\s*)["\x27]([^"\x27]+)["\x27]/i', $r['body'], $m)) {
-                    $location = $m[1];
-                }
-                if (!$location) {
-                    break;
-                }
-                $url = (string)UriResolver::resolve(new Uri($url), new Uri(self::decodeUrl($location)));
+        for ($hop = 0; $hop < 10; $hop++) {
+            if (!self::trusted($url, true) || isset($seen[$url])) {
+                throw new Problem('QQ 授权跳转异常，请重新扫码');
             }
-            throw new Problem('QQ 未返回乐跑应用授权结果，请重新扫码确认授权', 409);
-        } catch (\Throwable $e) {
-            // Keep the original callback and resumable encrypted context before
-            // the API clears a failed binding. Full reports stay in private storage.
-            $c['cookies'] = $cookies->toArray();
-            $qr['qq_context'] = $this->box->seal($c);
-            $this->diagnostic('exchange', ['initial_url' => $initial,'hops' => $hops,'qr' => $qr,'error' => $e->getMessage()]);
-            throw $e;
+            $seen[$url] = true;
+            if ($grant = self::grant($url)) {
+                return $this->verify($grant);
+            }
+            if (str_starts_with($url, 'auth://')) {
+                break;
+            }
+            $url = preg_replace('/^http:/', 'https:', $url);
+            $response = $this->get($url, $cookies, $context['xlogin']);
+            $location = $response['headers']['location'][0] ?? '';
+            if (!$location && preg_match('/(?:location(?:\\.href)?\\s*=\\s*|location\\.(?:replace|assign)\\(\\s*)["\\x27]([^"\\x27]+)["\\x27]/i', $response['body'], $match)) {
+                $location = $match[1];
+            }
+            if (!$location) {
+                break;
+            }
+            $url = Http::resolve($url, self::decodeUrl($location));
         }
+        throw new Problem('QQ 未返回授权结果，请重新扫码确认');
     }
     public function verify(array $grant): array
     {

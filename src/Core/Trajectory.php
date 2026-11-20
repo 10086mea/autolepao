@@ -67,87 +67,10 @@ final class Trajectory
         $random = static function () use ($seed, &$counter): float {
             return hexdec(substr(hash('sha256', $seed.':'.$counter++), 0, 8)) / 4294967295;
         };
-        $phases = [];
-        for ($i = 0;$i < 6;$i++) {
-            $phases[] = $random() * 2 * M_PI;
-        }
-        [$ring,$lengths] = self::circuit($c);
-        $jitter = (float)$c['jitter_m'];
-        $lat = array_sum(array_column($ring, 'a')) / count($ring);
-        $mx = 111320 * cos(deg2rad($lat));
-        $corridor = (float)($c['track_corridor_m'] ?? 0);
-        $area = 0.0;
-        for ($i = 1;$i < count($ring);$i++) {
-            $area += ($ring[$i - 1]['o'] - $ring[0]['o']) * ($ring[$i]['a'] - $ring[0]['a']) - ($ring[$i]['o'] - $ring[0]['o']) * ($ring[$i - 1]['a'] - $ring[0]['a']);
-        }
-        $orientation = $area >= 0 ? 1 : -1;
-        $gps = (float)($c['gps_drift_m'] ?? 0);
-        $drift = [];
-        if ($gps > 0) {
-            // Correlated, irregularly spaced positioning errors, not independent
-            // point jitter. Occasional larger anchors recover over several samples.
-            $at = 0.0;
-            $normal = (2 * $random() - 1) * $gps;
-            $along = (2 * $random() - 1) * $gps * .5;
-            while ($at < $total * 2 + 2000) {
-                $drift[] = ['d' => $at,'n' => $normal,'t' => $along];
-                $at += 18 + 42 * $random();
-                $amplitude = $random() < .12 ? 1.5 : 1.0;
-                $normal = .35 * $normal + .65 * (2 * $random() - 1) * $gps * $amplitude;
-                $along = .5 * $along + .5 * (2 * $random() - 1) * $gps * .5;
-            }
-            $drift[] = ['d' => $at,'n' => $normal,'t' => $along];
-        }
-        $position = static function (float $d) use ($ring, $lengths, $jitter, $phases, $mx, $corridor, $total, $orientation, $gps, $drift): array {
-            $p = self::position($ring, $lengths, $d);
-            if ($corridor > 0) {
-                $before = self::position($ring, $lengths, $d - 1);
-                $after = self::position($ring, $lengths, $d + 1);
-                $east = ($after['o'] - $before['o']) * $mx;
-                $north = ($after['a'] - $before['a']) * 111320;
-                $norm = hypot($east, $north);
-                if ($norm < 1e-6) {
-                    throw new Problem('跑道方向无法确定，请检查路线控制点');
-                }
-                // Strictly increasing, bounded lateral offset. No jump at lap joins,
-                // no independent latitude/longitude noise, no repeated parallel lap.
-                $offset = $corridor * (1 - 2 * exp(-$d / $total)) * $orientation;
-                $along = 0.0;
-                if ($gps > 0) {
-                    $lo = 0;
-                    $hi = count($drift) - 2;
-                    while ($lo < $hi) {
-                        $mid = intdiv($lo + $hi + 1, 2);
-                        if ($drift[$mid]['d'] <= $d) {
-                            $lo = $mid;
-                        } else {
-                            $hi = $mid - 1;
-                        }
-                    }
-                    $a = $drift[$lo];
-                    $b = $drift[$lo + 1];
-                    $f = max(0, min(1, ($d - $a['d']) / ($b['d'] - $a['d'])));
-                    $f = $f * $f * (3 - 2 * $f);
-                    $offset = ($a['n'] + ($b['n'] - $a['n']) * $f) * $orientation;
-                    $along = $a['t'] + ($b['t'] - $a['t']) * $f;
-                }
-                $p['o'] += ($north * $offset + $east * $along) / $norm / $mx;
-                $p['a'] += (-$east * $offset + $north * $along) / $norm / 111320;
-                return $p;
-            }
-            // Smooth correlated drift in metres, continuous across lap boundaries.
-            foreach (['a','o'] as $axis => $key) {
-                $noise = 0.0;
-                foreach ([[35,.5],[90,.3],[220,.2]] as $k => [$wave,$weight]) {
-                    $noise += $weight * sin(2 * M_PI * $d / $wave + $phases[$axis * 3 + $k]);
-                }
-                $p[$key] += $jitter / sqrt(2) * $noise / ($key === 'a' ? 111320 : $mx);
-                $p[$key] = round($p[$key], 8);
-            }
-            if (abs($p['a']) > 85 || abs($p['o']) > 180) {
-                throw new Problem('轨迹超出支持的坐标范围');
-            }
-            return $p;
+        [$ring, $lengths] = self::circuit($c);
+        $position = static function (float $distance) use ($ring, $lengths): array {
+            $point = self::position($ring, $lengths, $distance);
+            return ['a' => round($point['a'], 8), 'o' => round($point['o'], 8)];
         };
         $points = [$position(0) + ['distance_m' => 0.0]];
         $distance = 0.0;

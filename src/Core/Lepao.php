@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace AutoLepao\Core;
 
 use AutoLepao\Support\Http;
-use Psr\Log\LoggerInterface;
+use AutoLepao\Support\Diagnostics;
 
 final class Lepao
 {
     private const VERSION = '233';
     private const VERSION_NAME = '4.3.3';
     private const ENCRYPTED = ['Login/quickLoginV339','Login/RefreshToken','Run2/beforeRunV260','Run/stopRunV278','report/getOssSts'];
-    public function __construct(private Http $http, private LoggerInterface $logger)
+    public function __construct(private Http $http, private Diagnostics $logger)
     {
     }
     public function call(string $uri, array $credentials = [], array $extra = []): array
