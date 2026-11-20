@@ -30,6 +30,10 @@ ENCRYPTED = {"Login/quickLoginV339", "Login/RefreshToken", "Run2/beforeRunV260",
              "Run/stopRunV278", "report/getOssSts"}
 
 
+class RemoteTimeout(Problem):
+    """An established connection had no response within its read timeout."""
+
+
 def compact(value):
     return json.dumps(value, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
 
@@ -76,6 +80,8 @@ class Http:
             if sock:
                 self.local_ip = sock.getsockname()[0]
             result.content
+        except requests.ReadTimeout:
+            raise RemoteTimeout("网络等待超时，请稍后重试") from None
         except requests.RequestException:
             raise Problem("网络请求失败，请检查网络后重试") from None
         if not 200 <= result.status_code < 400:

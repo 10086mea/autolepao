@@ -9,7 +9,7 @@ import secrets
 import time
 from urllib.parse import parse_qs, urlencode, urljoin, urlsplit
 
-from .protocol import Http
+from .protocol import Http, RemoteTimeout
 from .storage import Problem, application_config, atomic_json
 
 
@@ -63,8 +63,13 @@ class Wechat:
         return {"uuid": data["uuid"], "image": image, "expires": time.time() + 300}
 
     def poll(self, qr):
-        data = self.http.json("GET", "https://open.weixin.qq.com/connect/l/qrconnect",
-                              params={"f": "json", "uuid": qr["uuid"]}, timeout=(10, 15))
+        try:
+            data = self.http.json("GET", "https://open.weixin.qq.com/connect/l/qrconnect",
+                                  params={"f": "json", "uuid": qr["uuid"]}, timeout=(10, 35))
+        except RemoteTimeout:
+            # The SDK endpoint holds its response while nobody has scanned yet.
+            # A read timeout ends this poll, not the QR authorization session.
+            return {"state": "waiting"}
         code = data.get("wx_errcode")
         if str(code) == "405" and data.get("wx_code"):
             return {"state": "ok", "code": data["wx_code"]}

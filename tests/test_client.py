@@ -12,7 +12,7 @@ import requests
 
 from lepao import plan
 from lepao.login import QQ, Wechat
-from lepao.protocol import ENVELOPES, LOGIN_KEYS, Http, Lepao, aes, compact, sign
+from lepao.protocol import ENVELOPES, LOGIN_KEYS, Http, Lepao, RemoteTimeout, aes, compact, sign
 from lepao.route import distance, gcj, normalize, track, wgs
 from lepao.run import Personal, steps
 from lepao.storage import Problem, State
@@ -136,6 +136,13 @@ class ProtocolTests(unittest.TestCase):
 
 
 class AuthTests(unittest.TestCase):
+    def test_idle_wechat_long_poll_is_waiting_not_failed_login(self):
+        http = FixtureHttp()
+        http.json = lambda *a, **k: (_ for _ in ()).throw(RemoteTimeout("fixture idle timeout"))
+        with tempfile.TemporaryDirectory() as tmp:
+            wx = Wechat(State(tmp), http, {"app_id": "fixture", "app_secret": "fixture"})
+            self.assertEqual(wx.poll({"uuid": "fixture-qr"}), {"state": "waiting"})
+
     def test_relogin_preserves_device_and_does_not_prompt_for_credentials(self):
         from lepao.cli import login
         with tempfile.TemporaryDirectory() as tmp:
@@ -316,13 +323,20 @@ class SubmissionTests(unittest.TestCase):
         self.assertFalse(self.http.puts)
         self.assertIsNone(self.state.get("pending"))
 
-    def test_changed_login_and_missing_checkpoint_block_submission(self):
+    def test_changed_login_blocks_submission(self):
         pending = self.start()
         self.state.update(account={**ACCOUNT, "access_token": "new-fixture-token"})
         self.now = pending["resume_at"]
         with self.assertRaises(Problem):
             self.personal.finish()
         self.assertFalse(any(e == "Run/stopRunV278" for e, _ in self.http.calls))
+
+    def test_missing_checkpoint_blocks_before_upload(self):
+        self.http.before["data"]["run_line_info"]["point_list"][0]["jingwei"] = "30.02,110"
+        with self.assertRaises(Problem):
+            self.personal.prepare_plan()
+        self.assertFalse(self.http.puts)
+        self.assertIsNone(self.state.get("pending"))
 
     def test_atomic_state_and_single_process_lock(self):
         with self.state:
