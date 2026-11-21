@@ -90,7 +90,9 @@ class Http:
 
     def json(self, method, url, **options):
         try:
-            result = self.request(method, url, **options).json()
+            # These endpoints send UTF-8, including when labelled text/plain.
+            # Requests' Latin-1 fallback for that header corrupts Chinese names.
+            result = json.loads(self.request(method, url, **options).content.decode("utf-8-sig"))
         except ValueError:
             raise Problem("远端没有返回可识别的数据") from None
         if not isinstance(result, dict):

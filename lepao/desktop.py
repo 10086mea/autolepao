@@ -14,6 +14,19 @@ from .route import distance, normalize, wgs
 from .storage import Problem
 
 
+class Window(tk.Tk):
+    def destroy(self):
+        if getattr(self, "_closing", False):
+            return
+        self._closing = True
+        # Tk keeps timers after a window is destroyed. A later Tk mainloop can
+        # run them after their Python callback commands have already been deleted.
+        # Cancel at Tcl level so each widget still owns its command cleanup.
+        for timer in self.tk.splitlist(self.tk.call("after", "info")):
+            self.tk.call("after", "cancel", timer)
+        super().destroy()
+
+
 def window(title, size):
     import sys
     if sys.platform == "win32":
@@ -22,7 +35,7 @@ def window(title, size):
             ctypes.windll.shcore.SetProcessDpiAwareness(1)
         except (AttributeError, OSError):
             pass
-    root = tk.Tk()
+    root = Window()
     root.title(title)
     width, height = map(int, size.split("x"))
     root.geometry(f"{min(width, root.winfo_screenwidth()-60)}x{min(height, root.winfo_screenheight()-100)}")
@@ -86,7 +99,7 @@ def scan(provider):
                 try:
                     image = Image.open(io.BytesIO(value))
                     image.thumbnail((340, 340), Image.Resampling.NEAREST)
-                    image_label.image = ImageTk.PhotoImage(image)
+                    image_label.image = ImageTk.PhotoImage(image, master=root)
                     image_label.configure(image=image_label.image)
                 except (OSError, ValueError):
                     result["error"] = "二维码图片无法显示"

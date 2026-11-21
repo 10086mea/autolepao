@@ -91,6 +91,16 @@ class FixtureHttp:
 
 
 class ProtocolTests(unittest.TestCase):
+    def test_utf8_json_is_not_decoded_as_latin1_from_text_plain_header(self):
+        http = Http()
+        response = requests.Response()
+        response.status_code = 200
+        response.headers["Content-Type"] = "text/plain"
+        response.encoding = "ISO-8859-1"
+        response._content = '{"nickname":"测试昵称"}'.encode("utf-8")
+        with patch.object(http, "request", return_value=response):
+            self.assertEqual(http.json("GET", "https://example.test/")["nickname"], "测试昵称")
+
     def test_matches_php_envelopes_and_signatures(self):
         golden = json.loads((Path(__file__).parent / "golden.json").read_text(encoding="utf-8"))
         params = {"uid": "1", "nonce": "123457", "openid": "fixture-openid", "accesstoken": "fixture-token",
