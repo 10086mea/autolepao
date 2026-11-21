@@ -4,7 +4,7 @@
 
 ## 使用
 
-Windows 便携包已完成，目前由维护者单独提供。解压后双击 **lepao.exe**。
+下载 [Windows 便携版](https://github.com/10086mea/autolepao/releases/download/v2.0.0/autolepao-python-windows-x64.zip)，解压后双击 **lepao.exe**。
 
 1. 使用微信扫码，在手机上确认登录。QQ 用户在菜单选择 QQ 登录。
 2. 选择“地图画线”，选跑区，点击地图画路线，保存。
